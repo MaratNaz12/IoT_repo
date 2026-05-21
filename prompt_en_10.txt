@@ -1,0 +1,194 @@
+You are an experienced Python developer, machine learning engineer, and network traffic analysis specialist.
+
+I need to create a reproducible Python application for a university project in the course “Internet of Things Protocols”. The goal of the project is to evaluate whether an LLM can generate a working application for IoT network traffic analysis and malware traffic classification.
+
+The input file is a Zeek/Bro conn.log CSV from the CTU-IoT-Malware-Capture dataset:
+
+File name:
+CTU-IoT-Malware-Capture-20-1conn.log.labeled.csv
+
+Columns:
+
+ts,
+uid,
+id.orig_h,
+id.orig_p,
+id.resp_h,
+id.resp_p,
+proto,
+service,
+duration,
+orig_bytes,
+resp_bytes,
+conn_state,
+local_orig,
+local_resp,
+missed_bytes,
+history,
+orig_pkts,
+orig_ip_bytes,
+resp_pkts,
+resp_ip_bytes,
+tunnel_parents,
+label,
+detailed-label
+
+Example rows:
+
+1538478769.600293,CSQG794riQ4XnzTxP2,192.168.100.103,37082,192.168.100.1,53,udp,dns,5.005151,78,0,S0,-,-,0,D,2,134,0,0,-,Benign,-
+1538479103.951732,CNgUZj2l83jIcPrLi2,192.168.100.103,38086,66.85.157.90,443,tcp,-,3.154212,0,0,S0,-,-,0,S,3,180,0,0,-,Malicious   C&C,Torii
+
+Dataset-specific requirements:
+1. Missing values are encoded as "-".
+2. The target column is "label".
+3. The label column contains values such as "Benign" and "Malicious   C&C"; excessive spaces must be normalized.
+4. The "detailed-label" column contains values such as "Torii" and must NOT be used as an input feature because it causes target leakage.
+5. The "uid" column is a unique connection identifier and must NOT be used as an input feature.
+6. Raw IP addresses "id.orig_h" and "id.resp_h" may cause overfitting because the model may memorize a specific C&C server IP. Therefore, the application must support two modes:
+   - Mode A: include raw IP address features;
+   - Mode B: exclude raw IP address features.
+   By default, raw IP addresses must be excluded.
+7. The dataset may be highly imbalanced, so accuracy is not enough. The code must compute precision, recall, F1-score, ROC-AUC, and confusion matrix. Recall for the malicious class is especially important.
+
+Write a complete Python script named:
+iot_malware_detection.py
+
+Application requirements:
+
+1. Use Python 3.
+2. Use the following libraries:
+   - pandas
+   - numpy
+   - scikit-learn
+   - matplotlib
+   - seaborn
+   - joblib
+
+3. Add a command-line interface with argparse:
+   - --data-path path to the CSV file
+   - --output-dir directory for results
+   - --include-ip flag to include raw IP address features
+   - --test-size, default 0.2
+   - --random-state, default 42
+
+Example commands:
+python iot_malware_detection.py --data-path data/CTU-IoT-Malware-Capture-20-1conn.log.labeled.csv --output-dir results
+python iot_malware_detection.py --data-path data/CTU-IoT-Malware-Capture-20-1conn.log.labeled.csv --output-dir results_ip --include-ip
+
+4. Data loading and cleaning:
+   - load the CSV with pandas;
+   - print shape, columns, and dtypes;
+   - replace "-" with np.nan;
+   - remove duplicate rows;
+   - normalize label values;
+   - create a binary target variable:
+       Benign -> 0
+       any label containing "Malicious" -> 1
+
+5. Perform EDA and save:
+   - class distribution CSV;
+   - missing values per column CSV;
+   - descriptive statistics for numeric columns;
+   - class distribution plot;
+   - top-10 destination ports plot;
+   - protocol distribution plot;
+   - conn_state distribution plot.
+
+6. Feature handling:
+   - exclude "label", "detailed-label", and "uid" from X;
+   - if --include-ip is not used, also exclude "id.orig_h" and "id.resp_h";
+   - convert the following numeric columns with pd.to_numeric(errors="coerce"):
+       ts,
+       id.orig_p,
+       id.resp_p,
+       duration,
+       orig_bytes,
+       resp_bytes,
+       missed_bytes,
+       orig_pkts,
+       orig_ip_bytes,
+       resp_pkts,
+       resp_ip_bytes
+   - categorical columns include:
+       proto,
+       service,
+       conn_state,
+       local_orig,
+       local_resp,
+       history,
+       tunnel_parents,
+       and IP columns if --include-ip is enabled.
+   - for numeric features use SimpleImputer(strategy="median") and StandardScaler where appropriate.
+   - for categorical features use SimpleImputer(strategy="most_frequent") and OneHotEncoder(handle_unknown="ignore").
+   - use sklearn Pipeline and ColumnTransformer.
+
+7. Add feature engineering:
+   - if history exists, create history_len;
+   - create bytes_ratio = orig_bytes / (resp_bytes + 1);
+   - create pkts_ratio = orig_pkts / (resp_pkts + 1);
+   - create total_bytes = orig_bytes + resp_bytes;
+   - create total_pkts = orig_pkts + resp_pkts;
+   - from ts create hour and dayofweek if possible.
+
+8. Split the data:
+   - train_test_split
+   - test_size from CLI
+   - random_state from CLI
+   - stratify=y
+
+9. Train at least three models:
+   - LogisticRegression with class_weight="balanced"
+   - RandomForestClassifier with class_weight="balanced"
+   - GradientBoostingClassifier or HistGradientBoostingClassifier
+
+10. For every model compute:
+   - accuracy
+   - precision for the malicious class
+   - recall for the malicious class
+   - F1-score for the malicious class
+   - macro F1
+   - weighted F1
+   - ROC-AUC if probabilities or decision scores are available
+   - confusion matrix
+   - classification_report
+
+11. Select the best model by malicious-class F1-score or macro F1. Explain the choice in code comments.
+
+12. Save to output-dir:
+   - metrics.csv with model comparison;
+   - classification_report for each model as .txt;
+   - confusion_matrix for each model as .png;
+   - best_model.joblib;
+   - features.json with the list of used features;
+   - summary.txt with a short textual report.
+
+13. Add robust error handling:
+   - if the label column is missing, raise a clear error;
+   - if only one class remains after preprocessing, raise a clear error;
+   - if ROC-AUC cannot be computed, do not crash; store NaN;
+   - handle scikit-learn compatibility for OneHotEncoder sparse vs sparse_output.
+
+14. Structure the code with functions:
+   - main()
+   - load_data()
+   - clean_data()
+   - add_features()
+   - prepare_features()
+   - build_preprocessor()
+   - train_and_evaluate()
+   - save_outputs()
+   - plot_confusion_matrix()
+   - plot_eda()
+
+15. At the end of your response provide:
+   - the full code for iot_malware_detection.py;
+   - requirements.txt;
+   - example run commands;
+   - a short explanation of the generated output files.
+
+Important:
+- Do NOT use "detailed-label" as an input feature.
+- Do NOT use "uid" as an input feature.
+- Do NOT use raw IP addresses by default unless --include-ip is specified.
+- The main task is binary classification: Benign vs Malicious.
+- The code must run on the real CSV file without manual edits.
