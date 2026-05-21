@@ -1,0 +1,30 @@
+You are a Python developer and machine learning specialist.
+
+I need to create a small educational project for IoT network traffic analysis.
+
+The dataset is a CSV file:
+CTU-IoT-Malware-Capture-20-1conn.log.labeled.csv
+
+It is a Zeek/Bro conn.log file with network connection records. The columns are:
+
+ts, uid, id.orig_h, id.orig_p, id.resp_h, id.resp_p, proto, service, duration,
+orig_bytes, resp_bytes, conn_state, local_orig, local_resp, missed_bytes,
+history, orig_pkts, orig_ip_bytes, resp_pkts, resp_ip_bytes, tunnel_parents,
+label, detailed-label
+
+The task is to classify network connections as normal or malicious.
+
+The target column is label. It contains values such as:
+Benign
+Malicious   C&C
+
+Please write a complete Python script that:
+1. Loads the CSV file.
+2. Cleans and preprocesses the data.
+3. Handles missing values, including "-" values.
+4. Trains several machine learning models for binary classification.
+5. Evaluates the models using accuracy, precision, recall, F1-score, and confusion matrix.
+6. Saves the results and the best model.
+7. Uses clear and reproducible code.
+
+Return the full Python code.

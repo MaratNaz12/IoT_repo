@@ -1,0 +1,28 @@
+Ты Python-разработчик и специалист по машинному обучению.
+
+Мне нужно сделать учебный проект по анализу сетевого трафика IoT. Есть CSV-файл:
+CTU-IoT-Malware-Capture-20-1conn.log.labeled.csv
+
+Это лог сетевых соединений Zeek/Bro conn.log. В нём есть колонки:
+
+ts, uid, id.orig_h, id.orig_p, id.resp_h, id.resp_p, proto, service, duration,
+orig_bytes, resp_bytes, conn_state, local_orig, local_resp, missed_bytes,
+history, orig_pkts, orig_ip_bytes, resp_pkts, resp_ip_bytes, tunnel_parents,
+label, detailed-label
+
+Нужно написать Python-код для классификации сетевых соединений на нормальные и вредоносные.
+
+Целевая колонка — label. В ней есть значения вроде:
+Benign
+Malicious   C&C
+
+Нужно:
+1. Загрузить CSV-файл.
+2. Сделать небольшую предобработку данных.
+3. Учесть, что пропуски в датасете могут быть записаны как "-".
+4. Обучить несколько моделей машинного обучения для бинарной классификации Benign vs Malicious.
+5. Посчитать метрики качества: accuracy, precision, recall, F1-score и confusion matrix.
+6. Сохранить результаты и лучшую модель.
+7. Сделать код понятным и воспроизводимым.
+
+Напиши полный Python-скрипт, который можно запустить на этом CSV-файле.
